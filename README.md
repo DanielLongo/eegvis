@@ -48,7 +48,7 @@
 ### Developer Install
 currently this is developer only package
 ```
-    git clone https://github.com/eegml/eegvis.git
+    git clone https://github.com/DanielLongo/eegvis.git
     cd eegvis
     pip install -e .
 ```   
