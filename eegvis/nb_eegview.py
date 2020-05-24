@@ -3,7 +3,7 @@
 from __future__ import absolute_import, print_function, division, unicode_literals
 from collections import OrderedDict
 import pprint
-
+import eeghdf
 import numpy as np
 import ipywidgets
 
@@ -31,7 +31,19 @@ import eegml_signal.filters as esfilters
 # to update dynamically, then change fig.y_range.start = newbottom; fig.y_range.end = newtop
 # """
 
+
+from csv import writer
+ 
+def append_list_as_row(file_name, list_of_elem):
+    # Open file in append mode
+    with open(file_name, 'a+', newline='') as write_obj:
+        # Create a writer object from csv module
+        csv_writer = writer(write_obj)
+        # Add contents of list as last row in the csv file
+        csv_writer.writerow(list_of_elem)
 # this is not used yet
+
+
 
 
 def ignore_warnings():
@@ -107,6 +119,7 @@ class EeghdfBrowser:
     def __init__(
         self,
         eeghdf_file,
+        save_file,
         page_width_seconds=10.0,
         start_seconds=-1,
         montage="trace",
@@ -125,9 +138,11 @@ class EeghdfBrowser:
 
         BTW 'trace' is what NK calls its 'as recorded' montage - might be better to call 'raw', 'default' or 'as recorded'
         """
-
-        self.eeghdf_file = eeghdf_file
-        self.update_eeghdf_file(eeghdf_file, montage, montage_options)
+        self.save_file = save_file
+        self.filename = eeghdf_file
+        self.eeghdf_file = eeghdf.Eeghdf(eeghdf_file)
+        # self.eeghdf_file = eeghdf_file
+        self.update_eeghdf_file(self.eeghdf_file, montage, montage_options)
 
         # display related
         self.page_width_seconds = page_width_seconds
@@ -971,6 +986,7 @@ class EeghdfBrowser:
         self.ui_buttonback = ipywidgets.Button(description="go backward 10s")
         self.ui_buttonf1 = ipywidgets.Button(description="forward 1 s")
         self.ui_buttonback1 = ipywidgets.Button(description="back 1 s")
+        self.save_section_button = ipywidgets.Button(description="save section")
 
         def go_forward(b, parent=self):
             self.loc_sec = self._limit_time_check(self.loc_sec + 10)
@@ -996,6 +1012,14 @@ class EeghdfBrowser:
 
         self.ui_buttonback1.on_click(go_backward1)
 
+        def save_secton_to_csv(b):
+            new_row = [self.filename, int(self.fs * self.loc_sec)]
+            append_list_as_row(self.save_file, new_row)
+
+
+        self.save_section_button.on_click(save_secton_to_csv)
+
+
         def go_to_handler(change, parent=self):
             # print("change:", change)
             if change["name"] == "value":
@@ -1009,6 +1033,7 @@ class EeghdfBrowser:
                     self.ui_buttonf,
                     self.ui_buttonback1,
                     self.ui_buttonf1,
+                    self.save_section_button
                 ]
             )
         )
@@ -1190,6 +1215,7 @@ class EegBrowser(EeghdfBrowser):
     @property
     def signals(self):
         return self.eeghdf_file.phys_signals
+
 
 
 # write a class with a plot at the bottom that scrolls either stays fixed or scrolls along with the eeg
